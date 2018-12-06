@@ -5,7 +5,8 @@ import 'leaflet-providers'
 import 'leaflet.markercluster'
 
 import './App.css'
-import allShows from './shows.json'
+// import allShows from './shows.json'
+import allLocations from './1000-locs.json'
 
 export default class App extends Component {
   constructor(props) {
@@ -24,23 +25,20 @@ export default class App extends Component {
   }
 
   prepareInitialShows = shows => {
-    const parsedShows = allShows.filter(s => s.lat && s.lng).map(show => {
-      const { start_at, end_at, created_at } = show
-      return {
-        ...show,
-        parsed_start_at: Date.parse(start_at),
-        parsed_end_at: Date.parse(end_at),
-        parsed_created_at: Date.parse(created_at)
-      }
-    })
-    return parsedShows
+    const parsedLocations = allLocations.features
+      .filter(l => l.geometry.coordinates[1] && l.geometry.coordinates[0])
+      .map(location => {
+        // const { start_at, end_at, created_at } = location
+        return {
+          ...location
+        }
+      })
+    return parsedLocations
   }
 
   filterShows = () => {
-    const filteredShows = this._shows.filter(
-      show =>
-        show.parsed_end_at > this.state.date &&
-        this.state.bounds.contains({ lat: show.lat, lng: show.lng })
+    const filteredShows = this._shows.filter(show =>
+      this.state.bounds.contains({ lat: show.geometry.coordinates[1], lng: show.geometry.coordinates[0] })
     )
     this.setState({ filteredShows })
   }
@@ -97,7 +95,7 @@ class Map extends React.Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
-    if ((this.SHOW_CLUSTERS)) {
+    if (this.SHOW_CLUSTERS) {
       this.replaceClusters()
     } else {
       this.replaceMarkers()
@@ -109,7 +107,7 @@ class Map extends React.Component {
     this._map = L.map(this._mapRef.current).setView([lat, lng], zoom)
     L.tileLayer.provider('OpenStreetMap.BlackAndWhite').addTo(this._map)
     this._markers = L.layerGroup().addTo(this._map)
-    this._clusters = L.markerClusterGroup().addTo(this._map)
+    this._clusters = L.markerClusterGroup({maxClusterRadius: 40}).addTo(this._map)
   }
 
   replaceMarkers = () => {
@@ -117,7 +115,9 @@ class Map extends React.Component {
     const { shows } = this.props
     if (shows.length < 200) {
       shows.forEach(show => {
-        this._markers.addLayer(L.marker([show.lat, show.lng]))
+        this._markers.addLayer(
+          L.marker([show.geometry.coordinates[1], show.geometry.coordinates[0]])
+        )
       })
     }
   }
@@ -127,7 +127,9 @@ class Map extends React.Component {
     const { shows } = this.props
     if (shows.length < 200) {
       shows.forEach(show => {
-        this._clusters.addLayer(L.marker([show.lat, show.lng]))
+        this._clusters.addLayer(
+          L.marker([show.geometry.coordinates[1], show.geometry.coordinates[0]])
+        )
       })
     }
   }
@@ -154,7 +156,7 @@ const MapWrapper = styled.div`
   flex: 1 0 60%;
 `
 
-const CUTOFF = 200
+const CUTOFF = 1000
 
 class List extends React.Component {
   render() {
@@ -165,8 +167,14 @@ class List extends React.Component {
         {shows.length < CUTOFF ? (
           shows
             .sort((s1, s2) => {
-              const p1 = L.latLng(s1.lat, s1.lng)
-              const p2 = L.latLng(s2.lat, s2.lng)
+              const p1 = L.latLng(
+                s1.geometry.coordinates[1],
+                s1.geometry.coordinates[0]
+              )
+              const p2 = L.latLng(
+                s2.geometry.coordinates[1],
+                s2.geometry.coordinates[0]
+              )
               return p1.distanceTo(center) - p2.distanceTo(center)
             })
             .map(show => (
@@ -174,9 +182,10 @@ class List extends React.Component {
                 <div className="name">{show.slug}</div>
                 <div className="address">{show.address}</div>
                 <div className="coordinates">
-                  {show.lat.toFixed(6)},{show.lng.toFixed(6)}
+                  {show.geometry.coordinates[1].toFixed(6)},
+                  {show.geometry.coordinates[0].toFixed(6)}
                 </div>
-                <div className="end_at">{show.end_at.toLocaleString()}</div>
+                {/* <div className="end_at">{show.end_at.toLocaleString()}</div> */}
               </ListItem>
             ))
         ) : (
