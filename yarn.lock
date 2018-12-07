@@ -5672,6 +5672,11 @@ leaflet-providers@^1.4.0:
   resolved "https://registry.yarnpkg.com/leaflet-providers/-/leaflet-providers-1.4.0.tgz#e87c5e38e747ac1e63acc96ac915175c23c7d04b"
   integrity sha512-8NMfcck1dDUnAcJ9RI/hNcbMVs2mLDHBHk/atpsXdcQr9CBsVBCJfERZG7eOwZI8tOBKmwNJ7gmZ8vjYBuiNtQ==
 
+leaflet.heat@^0.2.0:
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/leaflet.heat/-/leaflet.heat-0.2.0.tgz#109d8cf586f0adee41f05aff031e27a77fecc229"
+  integrity sha1-EJ2M9Ybwre5B8Fr/Ax4np3/swik=
+
 leaflet.markercluster@^1.4.1:
   version "1.4.1"
   resolved "https://registry.yarnpkg.com/leaflet.markercluster/-/leaflet.markercluster-1.4.1.tgz#b53f2c4f2ca7306ddab1dbb6f1861d5e8aa6c5e5"

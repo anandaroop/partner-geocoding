@@ -3,58 +3,75 @@ import styled from 'styled-components'
 import L from 'leaflet'
 import 'leaflet-providers'
 import 'leaflet.markercluster'
+import 'leaflet.heat'
 
 import './App.css'
-// import allShows from './shows.json'
-import allLocations from './1000-locs.json'
+import allFeatures from './all_the_locations.json' // should be GeoJSON
+
+/*** CONFIG ***/
+
+const SHOW_CLUSTERS = true
+const CLUSTERS_ZOOM_THRESHOLD = 16
+const CLUSTER_RADIUS = 30
+
+const LIST_SIZE_THRESHOLD = 1000
+
+// const TILE_PROVIDER = "OpenStreetMap.BlackAndWhite"
+// const TILE_PROVIDER = "OpenMapSurfer.Grayscale"
+// const TILE_PROVIDER = "Stamen.Toner"
+const TILE_PROVIDER = 'CartoDB.Voyager'
+
+/**************/
 
 export default class App extends Component {
   constructor(props) {
     super(props)
-    this._shows = this.prepareInitialShows()
+    this._features = this.prepareInitialFeatures()
     this.state = {
-      filteredShows: [],
+      filteredFeatures: [],
       date: new Date(),
       windowInDays: 90,
       bounds: null
     }
   }
 
-  componentDidMount() {
-    // this.filterShows()
-  }
+  // componentDidMount() {
+  //   this.filterFeatures()
+  // }
 
-  prepareInitialShows = shows => {
-    const parsedLocations = allLocations.features
-      .filter(l => l.geometry.coordinates[1] && l.geometry.coordinates[0])
-      .map(location => {
-        // const { start_at, end_at, created_at } = location
+  prepareInitialFeatures = () => {
+    const parsedLocations = allFeatures.features
+      .filter(f => f.geometry.coordinates[1] && f.geometry.coordinates[0])
+      .map(feature => {
         return {
-          ...location
+          ...feature
         }
       })
     return parsedLocations
   }
 
-  filterShows = () => {
-    const filteredShows = this._shows.filter(show =>
-      this.state.bounds.contains({ lat: show.geometry.coordinates[1], lng: show.geometry.coordinates[0] })
+  filterFeatures = () => {
+    const filteredFeatures = this._features.filter(feature =>
+      this.state.bounds.contains({
+        lat: feature.geometry.coordinates[1],
+        lng: feature.geometry.coordinates[0]
+      })
     )
-    this.setState({ filteredShows })
+    this.setState({ filteredFeatures })
   }
 
   setBounds = bounds => {
     this.setState({ bounds }, () => {
-      this.filterShows()
+      this.filterFeatures()
     })
   }
 
   render() {
     return (
       <Wrapper>
-        <Map shows={this.state.filteredShows} onMove={this.setBounds} />
+        <Map features={this.state.filteredFeatures} onMove={this.setBounds} />
         <List
-          shows={this.state.filteredShows}
+          features={this.state.filteredFeatures}
           center={this.state.bounds && this.state.bounds.getCenter()}
         />
       </Wrapper>
@@ -76,16 +93,10 @@ class Map extends React.Component {
   _map = null
   _markers = null
   _cluster = null
-  SHOW_CLUSTERS = true
 
   constructor(props) {
     super(props)
     this._mapRef = React.createRef()
-    this.state = {
-      lat: 40.7,
-      lng: -74,
-      zoom: 14
-    }
   }
 
   componentDidMount() {
@@ -95,28 +106,44 @@ class Map extends React.Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
-    if (this.SHOW_CLUSTERS) {
+    if (SHOW_CLUSTERS) {
       this.replaceClusters()
+      this.replaceHeat()
     } else {
       this.replaceMarkers()
     }
   }
 
   prepareMap = () => {
-    const { lat, lng, zoom } = this.state
-    this._map = L.map(this._mapRef.current).setView([lat, lng], zoom)
-    L.tileLayer.provider('OpenStreetMap.BlackAndWhite').addTo(this._map)
+    this._map = L.map(this._mapRef.current)
+    L.tileLayer.provider(TILE_PROVIDER).addTo(this._map)
+
+    this._map.setView([0, 0], 2)
+    // this._map.setView([40.72, -74], 14)
+
     this._markers = L.layerGroup().addTo(this._map)
-    this._clusters = L.markerClusterGroup({maxClusterRadius: 40}).addTo(this._map)
+
+    this._clusters = L.markerClusterGroup({
+      maxClusterRadius: CLUSTER_RADIUS,
+      zoomToBoundsOnClick: false
+    }).addTo(this._map)
+
+    this._heat = L.heatLayer([], {
+      radius: CLUSTER_RADIUS,
+      blur: CLUSTER_RADIUS / 2
+    }).addTo(this._map)
   }
 
   replaceMarkers = () => {
     this._markers.clearLayers()
-    const { shows } = this.props
-    if (shows.length < 200) {
-      shows.forEach(show => {
+    const { features } = this.props
+    if (features.length < 200) {
+      features.forEach(feature => {
         this._markers.addLayer(
-          L.marker([show.geometry.coordinates[1], show.geometry.coordinates[0]])
+          L.marker([
+            feature.geometry.coordinates[1],
+            feature.geometry.coordinates[0]
+          ])
         )
       })
     }
@@ -124,22 +151,37 @@ class Map extends React.Component {
 
   replaceClusters = () => {
     this._clusters.clearLayers()
-    const { shows } = this.props
-    if (shows.length < 200) {
-      shows.forEach(show => {
+    const { features } = this.props
+    // if (features.length < 200) {
+    if (this._map.getZoom() >= CLUSTERS_ZOOM_THRESHOLD) {
+      features.forEach(feature => {
         this._clusters.addLayer(
-          L.marker([show.geometry.coordinates[1], show.geometry.coordinates[0]])
+          L.marker([
+            feature.geometry.coordinates[1],
+            feature.geometry.coordinates[0]
+          ])
         )
       })
     }
   }
 
+  replaceHeat = () => {
+    const { features } = this.props
+    const points = features.map(s => s.geometry.coordinates.reverse()) // geojson = lng,lat ; leaflet-heat = lat,lng
+    this._heat.setLatLngs(points)
+  }
+
   addListeners = () => {
     this._map.on('moveend', this.handleMove)
+    this._clusters.on('clusterclick', this.handleClusterClick)
   }
 
   handleMove = e => {
     this.props.onMove(this._map.getBounds())
+  }
+
+  handleClusterClick = e => {
+    console.log(e.layer.getAllChildMarkers());
   }
 
   render() {
@@ -156,16 +198,16 @@ const MapWrapper = styled.div`
   flex: 1 0 60%;
 `
 
-const CUTOFF = 1000
-
 class List extends React.Component {
   render() {
-    const { shows, center } = this.props
+    const { features, center } = this.props
     return (
       <ListWrapper>
-        <p>{shows.length} results within current bounds</p>
-        {shows.length < CUTOFF ? (
-          shows
+        <CurrentCount>
+          {features.length} results within current bounds
+        </CurrentCount>
+        {features.length < LIST_SIZE_THRESHOLD ? (
+          features
             .sort((s1, s2) => {
               const p1 = L.latLng(
                 s1.geometry.coordinates[1],
@@ -177,19 +219,34 @@ class List extends React.Component {
               )
               return p1.distanceTo(center) - p2.distanceTo(center)
             })
-            .map(show => (
-              <ListItem key={show.slug}>
-                <div className="name">{show.slug}</div>
-                <div className="address">{show.address}</div>
-                <div className="coordinates">
-                  {show.geometry.coordinates[1].toFixed(6)},
-                  {show.geometry.coordinates[0].toFixed(6)}
+            .map(feature => (
+              <ListItem key={feature.properties.id}>
+                <div className="name">
+                  <a
+                    target="cms"
+                    href={`https://cms-staging.artsy.net/locations?current_partner_id=${
+                      feature.properties.partner_id
+                    }`}
+                  >
+                    {feature.properties.name || '(missing)'}
+                  </a>
                 </div>
-                {/* <div className="end_at">{show.end_at.toLocaleString()}</div> */}
+                <div className="address">
+                  {[feature.properties.address, feature.properties.city].join(
+                    ', '
+                  )}
+                </div>
+                <div className="coordinates">
+                  {feature.geometry.coordinates[1].toFixed(6)},
+                  {feature.geometry.coordinates[0].toFixed(6)}
+                </div>
+                {/* <div className="end_at">{feature.end_at.toLocaleString()}</div> */}
               </ListItem>
             ))
         ) : (
-          <TooMany>more than {CUTOFF} — shift-drag to zoom in</TooMany>
+          <TooMany>
+            more than {LIST_SIZE_THRESHOLD} — shift-drag to zoom in
+          </TooMany>
         )}
       </ListWrapper>
     )
@@ -198,12 +255,17 @@ class List extends React.Component {
 
 const ListWrapper = styled.div`
   background: #fff;
-  flex: 1 0 40%;
+  flex: 1 0 30%;
   overflow: scroll;
+  padding: 1em;
 `
 
+const CurrentCount = styled.p`
+  font-weight: bold;
+`
 const ListItem = styled.div`
-  margin: 0.5em;
+  margin: 0.5em 0;
+  line-height: 1.2rem;
 
   .name {
     /* font-weight: bold; */
@@ -211,8 +273,15 @@ const ListItem = styled.div`
 
   .address {
     color: purple;
+    font-size: 0.8rem;
+  }
+
+  .coordinates {
+    color: gray;
+    font-size: 0.8rem;
   }
 `
 const TooMany = styled.div`
   color: red;
+  margin: 1em 0;
 `
