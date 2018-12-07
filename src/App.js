@@ -195,7 +195,7 @@ class Map extends React.Component {
 
 const MapWrapper = styled.div`
   background: #eee;
-  flex: 1 0 60%;
+  flex-grow: 10;
 `
 
 class List extends React.Component {
@@ -255,7 +255,7 @@ class List extends React.Component {
 
 const ListWrapper = styled.div`
   background: #fff;
-  flex: 1 0 30%;
+  flex: 1 0 20em;
   overflow: scroll;
   padding: 1em;
 `
