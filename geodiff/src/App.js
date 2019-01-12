@@ -2,8 +2,7 @@ import React, { Component } from 'react'
 import styled from 'styled-components'
 import { Locations } from './Locations'
 import { Map } from './Map'
-import low from 'lowdb'
-import LocalStorage from 'lowdb/adapters/LocalStorage'
+import { getDatabase } from './db.js'
 
 const SORTS = {
   NAME: 'NAME'
@@ -20,33 +19,14 @@ class App extends Component {
   }
 
   componentDidMount() {
-    this.intializeDB()
+    this.prepareDatabase()
   }
 
-  intializeDB = () => {
-    const adapter = new LocalStorage('db')
-    this._db = low(adapter)
-
-    if (this.isEmptyDB()) {
-      this.seedDB()
-    } else {
-      this.setState({ isLoaded: true })
-    }
-  }
-
-  isEmptyDB = () => {
-    const collections = this._db.keys().value()
-    return collections.length === 0
-  }
-
-  seedDB = () => {
-    const url = new URL(`/db.json`, document.location.origin)
-    fetch(url)
-      .then(response => response.json())
-      .then(({ features }) => {
-        this._db.setState({ features }).write()
-      })
-      .then(() => this.setState({ isLoaded: true }))
+  prepareDatabase = async () => {
+    this._db = await getDatabase('/db.json')
+    this.setState({
+      isLoaded: true
+    })
   }
 
   getSortCriteria = () => {
