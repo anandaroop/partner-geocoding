@@ -27,6 +27,19 @@ class App extends Component {
     const adapter = new LocalStorage('db')
     this._db = low(adapter)
 
+    if (this.isEmptyDB()) {
+      this.seedDB()
+    } else {
+      this.setState({ isLoaded: true })
+    }
+  }
+
+  isEmptyDB = () => {
+    const collections = this._db.keys().value()
+    return collections.length === 0
+  }
+
+  seedDB = () => {
     const url = new URL(`/db.json`, document.location.origin)
     fetch(url)
       .then(response => response.json())

@@ -24,3 +24,4 @@ yarn-error.log*
 
 # lowdb
 public/db.json
+public/db.bak.json
