@@ -31,10 +31,9 @@ export class Map extends React.Component {
   prepareMap = () => {
     this._map = L.map(this._mapRef.current)
     L.tileLayer.provider(TILE_PROVIDER).addTo(this._map)
-    this._points = L.layerGroup().addTo(this._map)
+    this._points = L.featureGroup().addTo(this._map)
 
     this._map.setView([0, 0], 2)
-    // this._map.setView([40.72, -74], 14)
   }
 
   addListeners = () => {
@@ -45,17 +44,13 @@ export class Map extends React.Component {
     this._points.clearLayers()
     const { location } = this.props
 
-    // add the polyline geometry
-    const feature = L.geoJSON(location)
-    this._points.addLayer(feature)
-    this._map.fitBounds(feature.getBounds())
-
     // mark the original geocoded point
     const original = L.circleMarker(location.properties.geocodes.original, {
       radius: 5,
       color: 'red',
       fill: false
     })
+
     this._points.addLayer(original)
 
     // mark the re-geocoded point
@@ -69,7 +64,21 @@ export class Map extends React.Component {
     )
     this._points.addLayer(redo_old_address)
 
-    // TODO: mark the scraped + geocoded point
+    // mark the scraped + geocoded point
+    const new_address_string = location.properties.new_address_string
+    if (new_address_string) {
+      const new_address = L.circleMarker(
+        location.properties.geocodes.new_address,
+        {
+          radius: 15,
+          color: 'blue',
+          fill: false
+        }
+      )
+      this._points.addLayer(new_address)
+    }
+
+    this._map.fitBounds(this._points.getBounds())
   }
 
   handleMove = e => {
