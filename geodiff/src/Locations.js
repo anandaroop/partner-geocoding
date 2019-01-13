@@ -1,5 +1,5 @@
 import React from 'react'
-import styled from 'styled-components'
+import styled, { css } from 'styled-components'
 
 const currentAddress = loc => {
   const { address, address2 } = loc.properties.attributes
@@ -10,7 +10,8 @@ export const Locations = ({
   locations,
   query,
   updateQuery,
-  selectLocation
+  selectLocation,
+  selectedId
 }) => {
   return (
     <>
@@ -37,6 +38,7 @@ export const Locations = ({
             {locations.map(loc => (
               <TR
                 key={loc.properties.attributes._id}
+                current={loc.properties.attributes._id === selectedId}
                 onClick={e => {
                   e.preventDefault()
                   selectLocation(loc.properties.attributes._id)
@@ -87,10 +89,16 @@ const LocationTable = styled.table`
 `
 
 const TR = styled.tr`
+  outline: solid 2px transparent;
   &:hover {
-    background: #f0e0ff;
+    outline: solid 2px #f0e0ff;
     cursor: pointer;
   }
+  ${p =>
+    p.current &&
+    css`
+      background: #f0e0ff;
+    `}
 `
 
 const TH = styled.th`

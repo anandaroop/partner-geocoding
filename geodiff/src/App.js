@@ -84,6 +84,7 @@ class App extends Component {
         <PartnerPane>
           <Locations
             locations={locations}
+            selectedId={selectedId}
             query={query}
             updateQuery={this.updateQuery}
             selectLocation={this.selectLocation}
