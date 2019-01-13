@@ -43,39 +43,54 @@ export class Map extends React.Component {
   replacePoints = () => {
     this._points.clearLayers()
     const { location } = this.props
+    let point, line
 
     // mark the original geocoded point
-    const original = L.circleMarker(location.properties.geocodes.original, {
+    point = L.circleMarker(location.properties.geocodes.original, {
       radius: 5,
       color: 'red',
       fill: false
     })
-
-    this._points.addLayer(original)
+    this._points.addLayer(point)
 
     // mark the re-geocoded point
-    const redo_old_address = L.circleMarker(
-      location.properties.geocodes.redo_old_address,
+    point = L.circleMarker(location.properties.geocodes.redo_old_address, {
+      radius: 10,
+      color: 'green',
+      fill: false
+    })
+    line = L.polyline(
+      [
+        location.properties.geocodes.original,
+        location.properties.geocodes.redo_old_address
+      ],
       {
-        radius: 10,
-        color: 'green',
-        fill: false
+        color: 'green'
       }
     )
-    this._points.addLayer(redo_old_address)
+    this._points.addLayer(point)
+    this._points.addLayer(line)
 
     // mark the scraped + geocoded point
     const new_address_string = location.properties.new_address_string
     if (new_address_string) {
-      const new_address = L.circleMarker(
-        location.properties.geocodes.new_address,
+      point = L.circleMarker(location.properties.geocodes.new_address, {
+        radius: 15,
+        color: 'blue',
+        fill: false
+      })
+      line = L.polyline(
+        [
+          location.properties.geocodes.original,
+          location.properties.geocodes.new_address
+        ],
         {
-          radius: 15,
-          color: 'blue',
-          fill: false
+          color: 'blue'
         }
       )
-      this._points.addLayer(new_address)
+
+      this._points.addLayer(point)
+      this._points.addLayer(line)
     }
 
     this._map.fitBounds(this._points.getBounds())
