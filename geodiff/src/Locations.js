@@ -75,8 +75,8 @@ export class Locations extends React.Component {
                 <TH>Name</TH>
                 <TH>Address</TH>
                 <TH>City</TH>
-                <TH>Δ1</TH>
-                <TH>Δ2</TH>
+                <TH>Δ1 (m)</TH>
+                <TH>Δ2 (m)</TH>
               </tr>
             </thead>
             <tbody>
@@ -87,6 +87,11 @@ export class Locations extends React.Component {
                   onClick={e => {
                     e.preventDefault()
                     selectLocation(loc.properties.attributes._id)
+                    document
+                      .querySelector(
+                        `[data-location-id="${loc.properties.attributes._id}"]`
+                      )
+                      .focus()
                   }}
                 >
                   <TD className="name">{loc.properties.partner_name}</TD>
@@ -101,16 +106,23 @@ export class Locations extends React.Component {
                       }
                     }}
                   >
-                    {currentAddress(loc)}
+                    <OldAddress>{currentAddress(loc)}</OldAddress>
+                    {loc.properties.new_address_string && (
+                      <NewAddress>
+                        {loc.properties.new_address_string}
+                      </NewAddress>
+                    )}
                   </TD>
-                  <TD className="city">
-                    <TK />
-                  </TD>
+                  <TD className="city">{loc.properties.assigned_city}</TD>
                   <TD className="redo">
-                    <TK />
+                    {Math.round(
+                      1000 * loc.properties.geocodes.redo_old_address.distance
+                    ).toLocaleString()}
                   </TD>
                   <TD className="scrape">
-                    <TK />
+                    {Math.round(
+                      1000 * loc.properties.geocodes.new_address.distance
+                    ).toLocaleString()}
                   </TD>
                 </TR>
               ))}
@@ -170,10 +182,13 @@ const TH = styled.th`
 `
 
 const TD = styled.td`
-  padding: 0.5rem;
+  padding: 0.75rem 0.5em;
+  border-bottom: solid 1px #eee;
+  vertical-align: top;
 
   &.name {
     width: 20%;
+    font-weight: bold;
   }
   &.address {
     width: 40%;
@@ -181,15 +196,27 @@ const TD = styled.td`
   &.city {
     width: 20%;
     text-align: center;
+    color: #999;
   }
   &.redo {
     width: 10%;
-    text-align: center;
+    text-align: right;
+    color: #999;
   }
   &.scrape {
     width: 10%;
-    text-align: center;
+    text-align: right;
+    color: #999;
   }
 `
 
-const TK = () => <span style={{ color: '#999' }}>TK</span>
+const OldAddress = styled.div``
+
+const NewAddress = styled.div`
+  padding: 0.25em 0;
+  margin: 0.25em 0;
+  /* border-top: solid 1px #abf; */
+  color: #9ae;
+`
+
+// const TK = () => <span style={{ color: '#999' }}>TK</span>
