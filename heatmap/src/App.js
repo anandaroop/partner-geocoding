@@ -1,4 +1,5 @@
 import React, { Component } from 'react'
+import ReactDOMServer from 'react-dom/server'
 import styled from 'styled-components'
 import L from 'leaflet'
 import 'leaflet-providers'
@@ -22,6 +23,17 @@ const LIST_SIZE_THRESHOLD = 1000
 const TILE_PROVIDER = 'CartoDB.Voyager'
 
 /**************/
+
+const cmsLocationLink = feature => (
+  <a
+    target="cms"
+    href={`https://cms-staging.artsy.net/locations/${
+      feature.properties.id
+    }?current_partner_id=${feature.properties.partner_id}`}
+  >
+    {`${feature.properties.name || '(missing)'}`}
+  </a>
+)
 
 export default class App extends Component {
   constructor(props) {
@@ -119,7 +131,7 @@ class Map extends React.Component {
     L.tileLayer.provider(TILE_PROVIDER).addTo(this._map)
 
     this._map.setView([0, 0], 2)
-    // this._map.setView([40.72, -74], 14)
+    // this._map.setView([40.72, -74], 16)
 
     this._markers = L.layerGroup().addTo(this._map)
 
@@ -160,6 +172,8 @@ class Map extends React.Component {
             feature.geometry.coordinates[1],
             feature.geometry.coordinates[0]
           ])
+            .bindPopup(ReactDOMServer.renderToString(cmsLocationLink(feature)))
+            .on('mouseover', el => el.target.openPopup())
         )
       })
     }
@@ -173,16 +187,18 @@ class Map extends React.Component {
 
   addListeners = () => {
     this._map.on('moveend', this.handleMove)
-    this._clusters.on('clusterclick', this.handleClusterClick)
+    // this._clusters.on('clusterclick', this.handleClusterClick)
   }
 
   handleMove = e => {
     this.props.onMove(this._map.getBounds())
   }
 
-  handleClusterClick = e => {
-    console.log(e.layer.getAllChildMarkers());
-  }
+  // handleClusterClick = e => {
+  //   e.layer
+  //     .getAllChildMarkers()
+  //     .forEach(m => console.log(m.getPopup().getContent()))
+  // }
 
   render() {
     return (
@@ -221,16 +237,7 @@ class List extends React.Component {
             })
             .map(feature => (
               <ListItem key={feature.properties.id}>
-                <div className="name">
-                  <a
-                    target="cms"
-                    href={`https://cms-staging.artsy.net/locations?current_partner_id=${
-                      feature.properties.partner_id
-                    }`}
-                  >
-                    {feature.properties.name || '(missing)'}
-                  </a>
-                </div>
+                <div className="name">{cmsLocationLink(feature)}</div>
                 <div className="address">
                   {[feature.properties.address, feature.properties.city].join(
                     ', '
