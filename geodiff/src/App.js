@@ -149,7 +149,7 @@ const Main = styled.main`
 
 const PartnerPane = styled.div`
   flex: 1 0 60%;
-  max-width: 50rem;
+  max-width: 55rem;
 `
 
 const MapPane = styled.div`

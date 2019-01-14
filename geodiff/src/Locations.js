@@ -1,5 +1,5 @@
 import React from 'react'
-import styled, { css } from 'styled-components'
+import styled from 'styled-components'
 import _ from 'lodash'
 
 import { SORTS } from './App'
@@ -166,6 +166,7 @@ export class Locations extends React.Component {
                 <TR
                   key={loc.properties.attributes._id}
                   current={loc.properties.attributes._id === selectedId}
+                  data-location-id={loc.properties.attributes._id}
                   onClick={e => {
                     e.preventDefault()
                     selectLocation(loc.properties.attributes._id)
@@ -175,19 +176,16 @@ export class Locations extends React.Component {
                       )
                       .focus()
                   }}
+                  tabIndex={0}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      selectLocation(loc.properties.attributes._id)
+                    }
+                  }}
                 >
                   <TD className="name">{loc.properties.partner_name}</TD>
-                  <TD
-                    data-location-id={loc.properties.attributes._id}
-                    tabIndex={0}
-                    className="address"
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        selectLocation(loc.properties.attributes._id)
-                      }
-                    }}
-                  >
+                  <TD className="address">
                     <OldAddress>{currentAddress(loc)}</OldAddress>
                     {loc.properties.new_address_string && (
                       <NewAddress>
@@ -267,15 +265,14 @@ const TR = styled.tr`
     outline: solid 2px #f0e0ff;
     cursor: pointer;
   }
-  ${p =>
-    p.current &&
-    css`
-      background: #f0e0ff;
-    `}
+  &:focus {
+    outline: solid 2px purple;
+  }
+  ${p => p.current && 'background: #f0e0ff;'}
 `
 
 const TH = styled.th`
-  background: ${p => (p.current ? '#eeddff' : '#f0f0f0')};
+  background: ${p => (p.current ? '#ede' : '#f0f0f0')};
   border-left: solid 5px white;
   border-right: solid 5px white;
   padding: 0.5rem;
